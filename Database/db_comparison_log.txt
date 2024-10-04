@@ -1,0 +1,65 @@
+Comparing tables:
+
+Comparing table: obj_user_role_map
+
+Comparing table: sys_log
+
+Comparing table: obj_product
+
+Comparing table: t_unit
+
+Comparing table: obj_user_approval
+
+Comparing table: obj_user
+
+Comparing table: sys_label_module_map
+
+Comparing table: sys_module
+
+Comparing table: obj_role_module
+
+Comparing table: sys_email_template
+
+Comparing table: obj_invoice
+
+Comparing table: sys_label_content
+
+Comparing table: obj_client
+
+Comparing table: sys_layout
+
+Comparing table: t_receipt
+
+Comparing table: t_ingredient
+
+Comparing table: obj_product_detail
+
+Comparing table: obj_product_detail_group
+
+Comparing table: sys_email
+
+Comparing table: sys_label
+
+Comparing table: t_stock_level
+
+Comparing table: sys_menu
+
+Comparing table: sys_config
+
+Comparing table: obj_invoice_item
+
+Comparing table: sys_session
+
+Comparing table: t_stock_in
+
+Comparing table: sys_language
+
+Comparing table: obj_user_role
+
+Comparing table: obj_inventory
+
+Comparing table: obj_contact
+
+Comparing views:
+
+Comparing stored procedures:
