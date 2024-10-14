@@ -1,2 +1,6 @@
 # .gitignore
 compare_db_config.py
+config.py
+db_comparison_log.txt
+__pycache__/
+*.py[cod]
