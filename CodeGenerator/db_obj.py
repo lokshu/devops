@@ -13,10 +13,12 @@ engine = create_engine(db_url)
 
 # Jinja2 template for the Java entity file
 java_entity_template = """
-package {{ package_name }};
+package {{ package_name }}.entity;
 
-import javax.persistence.*;
+//replace this with javax for lower version of spring boot
+import jakarta.persistence.*;
 import lombok.Data;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -24,10 +26,10 @@ import lombok.Data;
 public class {{ class_name }} {
 
     {% for column in columns %}
-    @Column(name = "{{ column['name'] }}"){% if column['is_primary_key'] %}
+    @Column(name = "{{ column['name'] }}"{% if column['length'] %}, length = {{ column['length'] }}{% endif %}){% if column['is_primary_key'] %}
     @Id{% if column['is_auto_increment'] %}
     @GeneratedValue(strategy = GenerationType.IDENTITY){% endif %}{% endif %}
-    private {{ column['java_type'] }} {{ column['name'].lower() }};
+    private {{ column['java_type'] }} {{ column['camel_case_name'] }};
     {% endfor %}
 }
 """
@@ -65,7 +67,7 @@ import {{ package_name }}.entity.{{ class_name }};
 
 @Repository
 public interface {{ class_name }}Repository extends JpaRepository<{{ class_name }}, Integer> {
-    {{ class_name }} findBy{{ class_name }}Id(Integer {{ class_name.lower() }}Id);
+    
 }
 """
 
@@ -75,11 +77,15 @@ type_mapping = {
     "BIGINT": "Long",
     "VARCHAR": "String",
     "TEXT": "String",
-    "DATE": "Date",
-    "DATETIME": "Date",
+    "DATE": "LocalDateTime",
+    "DATETIME": "LocalDateTime",
     "DECIMAL": "BigDecimal",
     # Add other type mappings as needed
 }
+
+def to_camel_case(snake_str):
+    components = snake_str.split('_')
+    return components[0].lower() + ''.join(x.capitalize() for x in components[1:])
 
 # Function to generate the Java class name
 def generate_class_name(table_name):
@@ -98,15 +104,22 @@ def get_columns(table_name):
         column_name = column['name']
         is_primary_key = column_name in primary_keys  # Check if the column is in the list of primary keys
         is_auto_increment = column['autoincrement'] if is_primary_key else False  # Direct access to 'autoincrement'
+        
+        # Check if the column has a length (for VARCHAR, etc.)
+        column_length = column['type'].length if hasattr(column['type'], 'length') else None
 
         columns.append({
             'name': column_name,
+            'camel_case_name': to_camel_case(column_name),  # Generate camel case name
             'type': column['type'].__class__.__name__.upper(),
             'is_primary_key': is_primary_key,
             'is_auto_increment': is_auto_increment,
-            'java_type': type_mapping.get(column['type'].__class__.__name__.upper(), 'String')  # Default to String
+            'java_type': type_mapping.get(column['type'].__class__.__name__.upper(), 'String'),  # Default to String
+            'length': column_length  # Add length information
         })
     return columns
+
+
 
 # Function to check if the object is a view
 def is_view(table_name):
