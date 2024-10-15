@@ -71,6 +71,94 @@ public interface {{ class_name }}Repository extends JpaRepository<{{ class_name 
 }
 """
 
+service_template = """
+package {{ package_name }}.service;
+
+import {{ package_name }}.entity.{{ class_name }};
+import {{ package_name }}.repository.{{ class_name }}Repository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class {{ class_name }}Service {
+
+    @Autowired
+    private {{ class_name }}Repository {{ camel_class_name }}Repository;
+
+    public List<{{ class_name }}> getAll() {
+        return {{ camel_class_name }}Repository.findAll();
+    }
+
+    public Optional<{{ class_name }}> getById(Integer id) {
+        return {{ camel_class_name }}Repository.findById(id);
+    }
+
+    {% if not is_view %}
+    public {{ class_name }} insert({{ class_name }} {{ camel_class_name }}) {
+        return {{ camel_class_name }}Repository.save({{ camel_class_name }});
+    }
+
+    public {{ class_name }} update({{ class_name }} {{ camel_class_name }}) {
+        return {{ camel_class_name }}Repository.save({{ camel_class_name }});
+    }
+    {% endif %}
+}
+"""
+
+controller_template = """
+package {{ package_name }}.controller;
+
+import {{ package_name }}.entity.{{ class_name }};
+import {{ package_name }}.service.{{ class_name }}Service;
+import {{ package_name }}.repository.{{ class_name }}Repository;
+
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/{{ camel_class_name }}")
+public class {{ class_name }}Controller {
+
+    @Autowired
+    private {{ class_name }}Service {{ camel_class_name }}Service;
+
+    @Autowired
+    private {{ class_name }}Repository {{ camel_class_name }}Repository;
+
+    @GetMapping
+    public ResponseEntity<Page<{{ class_name }}>> getAll(
+        @PageableDefault(size = 10) Pageable pageable,
+        @RequestParam(required = false) String keyword) {
+
+        Page<{{ class_name }}> {{ camel_class_name }} = Page.empty();
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            // Uncomment and implement search logic in repository if needed
+            // {{ camel_class_name }} = {{ camel_class_name }}Repository.searchByKeyword(keyword, pageable);
+        } else {    
+            {{ camel_class_name }} = {{ camel_class_name }}Repository.findAll(pageable);
+        }    
+        return ResponseEntity.ok({{ camel_class_name }}); 
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Optional<{{ class_name }}>> getById(@PathVariable Integer id) {
+        Optional<{{ class_name }}> {{ camel_class_name }} = {{ camel_class_name }}Service.getById(id);
+        if ({{ camel_class_name }}.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok({{ camel_class_name }});
+    }
+}
+"""
+
 # Mapping of MySQL types to Java types
 type_mapping = {
     "INTEGER": "Integer",
@@ -151,6 +239,56 @@ def generate_entity(table_name):
 
     print(f"Generated entity: {output_file}")
 
+# Function to generate the service class file directly
+def generate_service(table_name):
+    class_name = generate_class_name(table_name)
+    camel_class_name = to_camel_case(class_name)
+    is_view_flag = is_view(table_name)
+
+    # Use Jinja2 to render the service template
+    template = Template(service_template)
+    rendered = template.render(
+        package_name=package_name,
+        class_name=class_name,
+        camel_class_name=camel_class_name,
+        is_view=is_view_flag
+    )
+
+    # Save the generated file to the specified folder
+    output_folder = os.path.join(java_project_folder, 'src', 'main', 'java', package_name.replace('.', os.sep), 'service')
+    os.makedirs(output_folder, exist_ok=True)
+    output_file = os.path.join(output_folder, f"{class_name}Service.java")
+
+    with open(output_file, 'w') as f:
+        f.write(rendered)
+
+    print(f"Generated service: {output_file}")
+
+# Function to generate the controller class file
+def generate_controller(table_name):
+    class_name = generate_class_name(table_name)
+    camel_class_name = to_camel_case(class_name)
+    is_view_flag = is_view(table_name)
+
+    # Use Jinja2 to render the controller template
+    template = Template(controller_template)
+    rendered = template.render(
+        package_name=package_name,
+        class_name=class_name,
+        camel_class_name=camel_class_name,
+        is_view=is_view_flag
+    )
+
+    # Save the generated file to the specified folder
+    output_folder = os.path.join(java_project_folder, 'src', 'main', 'java', package_name.replace('.', os.sep), 'controller')
+    os.makedirs(output_folder, exist_ok=True)
+    output_file = os.path.join(output_folder, f"{class_name}Controller.java")
+
+    with open(output_file, 'w') as f:
+        f.write(rendered)
+
+    print(f"Generated controller: {output_file}")
+
 # Function to generate the repository file
 def generate_repository(table_name):
     class_name = generate_class_name(table_name)
@@ -203,3 +341,9 @@ if __name__ == "__main__":
 
     # Generate the repository for the selected table
     generate_repository(selected_table)
+
+    # Generate the service directly for the selected table
+    generate_service(selected_table)
+
+    # Generate the controller for the selected table
+    generate_controller(selected_table)
