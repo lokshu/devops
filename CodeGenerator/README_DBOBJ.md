@@ -18,15 +18,15 @@ Before you begin, ensure you have the following:
 3. **Jinja2**: This Python package is required for rendering templates.
    
    You can install it using:
-   ```bash
-   pip install jinja2
+   ```
+   pip install sqlalchemy pymysql jinja2
    ```
 
 ## Configuration
 
 In the same folder as the script, create a config.py file with the following parameters:
 
-    ```bash
+    ```
     db_url = "mysql+pymysql://<user>:<password>@<host>:<port>/<database>"
     java_project_folder = "C:/Project/dodomax20erp"
     package_name = "com.embraiz.dodomax20"
@@ -37,7 +37,7 @@ python generate_code.py
 
 Once the generation is complete, you will find the following generated files inside your project folder:
 
-    ```bash
+    ```
     Entity: Under src/main/java/com/embraiz/dodomax20/entity/
     Repository: Under src/main/java/com/embraiz/dodomax20/repository/
     Service: Under src/main/java/com/embraiz/dodomax20/service/
