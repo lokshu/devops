@@ -33,20 +33,26 @@ def select_views(views):
     return selected_views
 
 def transfer_view(view_name):
-    """Transfer a view by extracting its definition and creating it in db2"""
-    inspector = inspect(engine_db1)  # Correct method to get inspector
+    """Transfer a view by extracting its definition and creating it in db2."""
+    inspector = inspect(engine_db1)
     view_definition = inspector.get_view_definition(view_name)
     
-    # Generate the CREATE VIEW SQL statement
-    create_view_sql = f"CREATE VIEW {view_name} AS {view_definition}"
-    
+    # Strip out 'DEFINER' and 'SQL SECURITY' and any extra 'CREATE' keywords
+    cleaned_view_definition = view_definition.replace('DEFINER=`root`@`%`', '').replace('SQL SECURITY DEFINER', '')
+    cleaned_view_definition = cleaned_view_definition.replace('CREATE ALGORITHM=UNDEFINED', '')
+    cleaned_view_definition = cleaned_view_definition.replace('CREATE VIEW', '').strip()
+    cleaned_view_definition = cleaned_view_definition.replace('VIEW', '').strip()
+    cleaned_view_definition = cleaned_view_definition.replace(f'`{view_name}` AS', '').strip()
+
+    # Generate the final view creation SQL
+    create_view_sql = f"CREATE VIEW {view_name} AS {cleaned_view_definition}"
+
     print(f"Creating view in db2: {view_name}")
     print(f"View definition: {create_view_sql}")
     
     try:
         with engine_db2.connect() as conn_db2:
             conn_db2.execute(text(create_view_sql))
-            conn_db2.commit()
             print(f"Successfully created view: {view_name}")
     except Exception as e:
         print(f"Failed to create view {view_name}: {e}")

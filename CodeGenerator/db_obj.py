@@ -179,6 +179,10 @@ def to_camel_case(snake_str):
 def generate_class_name(table_name):
     return ''.join(word.capitalize() for word in table_name.split('_'))
 
+def is_auto_increment_column(column):
+    # Only allow auto-increment for integer-like columns
+    return column['type'].__class__.__name__.upper() in ['INTEGER', 'BIGINT'] and column.get('autoincrement', False)
+
 # Function to get column details from the table
 def get_columns(table_name):
     inspector = inspect(engine)
@@ -191,7 +195,7 @@ def get_columns(table_name):
     for column in inspector.get_columns(table_name):
         column_name = column['name']
         is_primary_key = column_name in primary_keys  # Check if the column is in the list of primary keys
-        is_auto_increment = column['autoincrement'] if is_primary_key else False  # Direct access to 'autoincrement'
+        is_auto_increment = is_auto_increment_column(column) if is_primary_key else False  # Direct access to 'autoincrement'
         
         # Check if the column has a length (for VARCHAR, etc.)
         column_length = column['type'].length if hasattr(column['type'], 'length') else None
@@ -327,6 +331,7 @@ def list_tables():
 
 # Main code
 if __name__ == "__main__":
+    # List available tables and views
     tables = list_tables()
     print("Available tables/views:")
     for idx, table in enumerate(tables):
@@ -336,14 +341,36 @@ if __name__ == "__main__":
     choice = int(input("Select a table by number: ")) - 1
     selected_table = tables[choice]
 
-    # Generate the Java entity for the selected table
-    generate_entity(selected_table)
+    # Ask the user what to generate
+    print("\nSelect what to generate:")
+    print("Press Enter to generate all files (Entity, Repository, Service, Controller).")
+    print("1: Entity only")
+    print("2: Entity and Repository")
+    print("3: Entity, Repository, and Service")
+    
+    user_input = input("Your choice: ").strip()
 
-    # Generate the repository for the selected table
-    generate_repository(selected_table)
+    # Generate based on the user's choice
+    if user_input == "1":
+        print(f"Generating entity for {selected_table}...")
+        generate_entity(selected_table)
 
-    # Generate the service directly for the selected table
-    generate_service(selected_table)
+    elif user_input == "2":
+        print(f"Generating entity and repository for {selected_table}...")
+        generate_entity(selected_table)
+        generate_repository(selected_table)
 
-    # Generate the controller for the selected table
-    generate_controller(selected_table)
+    elif user_input == "3":
+        print(f"Generating entity, repository, and service for {selected_table}...")
+        generate_entity(selected_table)
+        generate_repository(selected_table)
+        generate_service(selected_table)
+
+    else:
+        print(f"Generating all files for {selected_table} (Entity, Repository, Service, Controller)...")
+        generate_entity(selected_table)
+        generate_repository(selected_table)
+        generate_service(selected_table)
+        generate_controller(selected_table)
+
+    print("Generation complete.")

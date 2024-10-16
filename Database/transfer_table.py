@@ -1,4 +1,5 @@
 import compare_db_config
+import json
 from sqlalchemy import create_engine, MetaData, Table, text
 from sqlalchemy.schema import CreateTable
 from sqlalchemy.orm import sessionmaker
@@ -34,17 +35,31 @@ def select_tables(tables):
     return selected_tables
 
 def convert_to_sql_values(row):
-    """Converts a dictionary row to SQL value syntax."""
+    """Converts a dictionary row to SQL value syntax, with proper escaping."""
     values = []
+    
     for value in row.values():
-        if isinstance(value, str):
-            values.append("'{}'".format(value.replace("'", "''")))  # Escape single quotes using format()
+        if isinstance(value, dict):
+            # Assuming the value is JSON-like, we serialize it to a string
+            json_str = json.dumps(value)  # Convert Python dict to JSON string
+            escaped_value = json_str.replace("'", "''")  # Escape single quotes inside the JSON string
+            values.append(f"'{escaped_value}'")
+        elif isinstance(value, str):
+            # Escape single quotes in regular strings
+            escaped_value = value.replace("'", "''")
+            values.append(f"'{escaped_value}'")
         elif value is None:
+            # Handle NULL values
             values.append("NULL")
         elif isinstance(value, (int, float)):
+            # Directly convert integers and floats
             values.append(str(value))
         else:
-            values.append("'{}'".format(str(value)))  # Convert to string for dates, etc.
+            # Fallback for other types, convert to string and escape
+            escaped_value = str(value).replace("'", "''")
+            values.append(f"'{escaped_value}'")
+    
+    # Return the formatted values as a tuple in SQL syntax
     return f"({', '.join(values)})"
 
 
